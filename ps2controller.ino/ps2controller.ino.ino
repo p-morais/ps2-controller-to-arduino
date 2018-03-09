@@ -1,0 +1,62 @@
+#include <SPI.h>
+
+const int SS = 10;
+
+void setup() 
+{
+  Serial.begin(9600);
+
+  SPI.begin();
+  SPI.beginTransaction(SPISettings(250000, LSBFIRST, SPI_MODE3));
+  
+  pinMode(SS, OUTPUT);
+  digitalWrite(SS, HIGH);
+  
+  delay(30);
+
+  ps2_confg();  
+}
+
+
+void loop() {
+    poll();
+}
+
+void ps2_config()
+{
+  // enter config mode
+  spi_transfer({0x01, 0x43, 0x00, 0x01, 0x00});
+
+  //turn on analog mode
+  spi_transfer({0x01, 0x44, 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00});
+
+  //map motors
+  spi_transfer({0x01, 0x4D, 0x00, 0x00, 0x01, 0xFF, 0xFF, 0xFF, 0xFF});
+
+  //set to return all pressure vals
+  spi_transfer({0x01, 0x4F, 0x00, 0xFF, 0xFF, 0x03, 0x00, 0x00, 0x00});
+
+  //exit config mode
+  spi_transfer({0x01, 0x43, 0x00, 0x00, 0x5A, 0x5A, 0x5A, 0x5A, 0x5A});
+}
+
+
+void spi_transfer(byte msg[])
+{
+  len = sizeof(msg)/sizeof(byte);
+  byte data[len];
+  
+  digitalWrite(SS, LOW);
+  for(int i = 0; i < len; i++)
+  {
+    data[i] = SPI.transfer(msg[i]);
+    Serial.println(data[i], HEX);
+  }
+  digitalWrite(ss, HIGH);
+}
+
+void poll()
+{
+  spi_transfer({0x01, 0x42, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+}
+
